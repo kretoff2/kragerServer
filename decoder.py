@@ -1,4 +1,7 @@
 import random
+import socket
+
+PORT = 9234
 
 KEY = 836749125
 def text_to_bits(text, encoding='utf-8', errors='surrogatepass'):
