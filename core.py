@@ -3,16 +3,13 @@ import random
 import socket
 import smtplib
 import pymysql as sql
-import json
 from email.mime.text import MIMEText
+from twilio.rest import Client
+import fastapi
 
 config = None
 with open('core_config.json', 'r') as f:
     config = json.load(f)
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(('127.0.0.1',config['PORT']))
-server.listen(40)
 print('server started')
 
 def sql_conn():
@@ -29,11 +26,20 @@ def sql_conn():
         print("No conaction SQL...")
         print(ex)
         return -1
+
+app = FastAPI
+
 conn = sql_conn()
 cur= conn.cursor()
-cur.execute('CREATE TABLE IF NOT EXISTS users (id int auto_increment primary key, login varchar(50), tag varchar(50), password varchar(50), email varchar(50), subtitle varchar(50), num varchar(15))')
+cur.execute('CREATE TABLE IF NOT EXISTS users (id int auto_increment primary key, id int, login varchar(50), tag varchar(50), password varchar(50), email varchar(50), subtitle varchar(50), num varchar(15))')
 conn.commit()
 cur.close()
+
+temp = {
+    "users_reg_codes":{
+
+    }
+}
 def send_email(message, messageTo):
     sender = "kretoffauth@gmail.com"
     password = "mfhp qkkh axbh jgcs"
@@ -45,7 +51,7 @@ def send_email(message, messageTo):
         msg = MIMEText(message)
         msg["Subject"] = "Верификация"
         smtpServer.sendmail(sender,messageTo, msg.as_string())
-        print("message sanded")
+        #print("message sanded")
     except Exception as _ex:
         print(f'Error: {_ex}')
 
@@ -57,23 +63,22 @@ def reg(cod, tag, password, email):
     cur.execute(f"SELECT * FROM users WHERE email = '{email}'")
     thisEmailUser = cur.fetchone()
     if thisLoginUser != None:
-        user.send('invalidLogin'.encode('utf-8'))
         conn.commit()
         cur.close()
-        return
+        return {"data": "invalidLogin"}
     elif thisEmailUser != None:
-        user.send('invalidEmail'.encode('utf-8'))
         conn.commit()
         cur.close()
-        return
+        return {"data": "invalidEmail"}
     if cod == authCode:
         cur.execute('INSERT INTO users (tag, password, email) VALUES ("%s", "%s", "%s")' % (tag, password, email))
-        user.send('goodRegistration'.encode('utf-8'))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"data": "goodRegistration"}
     else:
         user.send('wrongCode'.encode('utf-8'))
-    conn.commit()
-    cur.close()
-    conn.close()
+        return {"data": "wrongCode"}
 
 def log(tag, password):
     conn = sql_conn()
@@ -82,22 +87,29 @@ def log(tag, password):
     thisUser = cur.fetchone()
     conn.commit()
     cur.close()
-    conn.close()
     if thisUser == None:
-        user.send('invalidLoginOrPassword'.encode('utf-8'))
+        return {"data": "invalidLoginOrPassword"}
     else:
-        user.send('goodLogin'.encode('utf-8'))
+        return {"data": "goodLogin"}
 
-authCode = "0"
-while True:
-    user, address = server.accept()
-    print(f'connected:\t{user}')
-    command = user.recv(1024).decode('utf-8')
-    comm = command.split("⫓")
-    if comm[0] == "sandReg":
+@app.get("/")
+def main(data = Body()):
+    pass
+@app.get("/sandReg")
+def main(data = Body()):
+    try:
         authCode = str(random.randint(100000, 999999))
-        send_email(f"Ваш код авторизации: {authCode}. Здравствуйте, на этот адрес электронной почты пытаются зарегестрировать аккаунт в krager. Если это не вы, просто проигнорируйте это сообщение",comm[1])
-    elif comm[0] == "reg":
-        reg(comm[1],comm[2],comm[3],comm[4])
-    elif comm[0] == "login":
-        log(comm[1],comm[2])
+        user_id = len(temp["users_reg_codes"])
+        temp["users_reg_codes"][user_id] = authCode
+        _email = data["email"]
+        send_email(f"Ваш код авторизации: {authCode}. Здравствуйте, на этот адрес электронной почты пытаются зарегестрировать аккаунт в krager. Если это не вы, просто проигнорируйте это сообщение",_email)
+        return {"data": "message_sanded", "your_id": user_id}
+    except Exception as _ex:
+        return {"data": f"error {_ex}"}
+@app.get("/reg")
+def main(data = Body()):
+    return reg(data["cod"], data["tag"], data["password"], data["email"])
+@app.get("/login")
+def main(data = Body()):
+    return log(data["tag"], data["password"])
+
