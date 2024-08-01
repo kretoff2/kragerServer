@@ -1,16 +1,18 @@
 import random
-import socket
+import string
 
-PORT = 9234
+def generate_random_string(length):
+    letters = string.ascii_lowercase
+    rand_string = ''.join(random.choice(letters) for i in range(length))
+    return rand_string
 
-KEY = 836749125
 def text_to_bits(text, encoding='utf-8', errors='surrogatepass'):
     bits = bin(int.from_bytes(text.encode(encoding, errors), 'big'))[2:]
     return bits.zfill(8 * ((len(bits) + 7) // 8))
 
 def coding(message:str, KEY):
     bits_message = text_to_bits(message)
-    key = format(KEY, 'b')
+    key = text_to_bits(KEY)
     key_len = len(key)
     i = len(bits_message) % key_len
     text = ""
@@ -29,7 +31,7 @@ def coding(message:str, KEY):
     return text
 def decoding(bits_message:str, KEY):
     try:
-        key = format(KEY, 'b')
+        key = text_to_bits(KEY)
         key_len = len(key)
         text = ""
         key_path = 0
@@ -82,17 +84,17 @@ def second_decoder(smessage:str, KEY):
         key_path+=1
     text = ""
     return message
-message = "This is a very secret message!!!"
-s_public = 197
-s_private = 199
-m_public = 151
-m_private = 157
-partical_key_s = generate_partial_key1(s_public, s_private, m_public)
-partical_key_m = generate_partial_key2(m_public, m_private, s_public)
-full_key_s = generate_full_key(s_private, m_public, partical_key_m)
-full_key_m = generate_full_key(m_private, m_public, partical_key_s)
-my_message = coding(message, KEY)
-my_message = second_coding_step(my_message, full_key_s)
-my_message2 = second_decoder(my_message, full_key_s)
-my_message = decoding(my_message2, KEY)
-print(my_message)
+#message = "This is a very secret message!!!"
+#s_public = 6544
+#s_private = 6498
+#m_public = 165456
+#m_private = 165154
+#partical_key_s = generate_partial_key1(s_public, s_private, m_public)
+#partical_key_m = generate_partial_key2(m_public, m_private, s_public)
+#full_key_s = generate_full_key(s_private, m_public, partical_key_m)
+#full_key_m = generate_full_key(m_private, m_public, partical_key_s)
+#my_message = coding(message, "KEY")
+#my_message = second_coding_step(my_message, full_key_s)
+#my_message2 = second_decoder(my_message, full_key_s)
+#my_message = decoding(my_message2, "KEY")
+#print(my_message)
