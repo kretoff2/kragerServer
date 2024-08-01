@@ -1,9 +1,5 @@
 import random
-import socket
 
-PORT = 9234
-
-KEY = 836749125
 def text_to_bits(text, encoding='utf-8', errors='surrogatepass'):
     bits = bin(int.from_bytes(text.encode(encoding, errors), 'big'))[2:]
     return bits.zfill(8 * ((len(bits) + 7) // 8))
@@ -82,17 +78,17 @@ def second_decoder(smessage:str, KEY):
         key_path+=1
     text = ""
     return message
-message = "This is a very secret message!!!"
-s_public = 197
-s_private = 199
-m_public = 151
-m_private = 157
-partical_key_s = generate_partial_key1(s_public, s_private, m_public)
-partical_key_m = generate_partial_key2(m_public, m_private, s_public)
-full_key_s = generate_full_key(s_private, m_public, partical_key_m)
-full_key_m = generate_full_key(m_private, m_public, partical_key_s)
-my_message = coding(message, KEY)
-my_message = second_coding_step(my_message, full_key_s)
-my_message2 = second_decoder(my_message, full_key_s)
-my_message = decoding(my_message2, KEY)
-print(my_message)
+#message = "This is a very secret message!!!"
+#s_public = 197
+#s_private = 199
+#m_public = 151
+#m_private = 157
+#partical_key_s = generate_partial_key1(s_public, s_private, m_public)
+#partical_key_m = generate_partial_key2(m_public, m_private, s_public)
+#full_key_s = generate_full_key(s_private, m_public, partical_key_m)
+#full_key_m = generate_full_key(m_private, m_public, partical_key_s)
+#my_message = coding(message, "KEY")
+#my_message = second_coding_step(my_message, full_key_s)
+#my_message2 = second_decoder(my_message, full_key_s)
+#my_message = decoding(my_message2, "KEY")
+#print(my_message)
