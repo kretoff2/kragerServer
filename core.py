@@ -167,10 +167,10 @@ def main(data = Body()):
 def main(data = Body(),my_id: Optional[str] = Header(None, alias="my_id"), deviceID: Optional[str] = Header(None, alias="deviceID")):
     message = check_user(my_id, deviceID)
     if message == -1: return {"data": "verifityError"}
-    return 200
+    return
 
 @app.get("/getMessages")
 def main(my_id: Optional[str] = Header(None, alias="my_id"), deviceID: Optional[str] = Header(None, alias="deviceID"), fromIndex: Optional[str] = Header(None, alias="fromIndex")):
     message = check_user(my_id, deviceID)
     if message == -1: return {"data": "verifityError"}
-    return 200
+    return
