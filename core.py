@@ -265,13 +265,13 @@ def main(data = Body(),my_id: Optional[str] = Header(None, alias="my_id"), devic
     message = check_user(my_id, deviceID, data)
     if message == -1: return {"data": "verifityError"}
     if message["userID"] == "kretoffi": return {"data":"userDon'tBlocked"}
-    conn = chat_sql_conn(my_id)
+    conn = chat_sql_conn("blockUsers")
     cur = conn.cursor()
-    cur.execute("SELECT * FROM blockUsers WHERE userID = ?", (data['userID']))
+    cur.execute("CREATE TABLE IF NOT EXISTS %s (id int auto_increment primary key, userID varchar(8), timeTo int)" % (my_id))
+    cur.execute("SELECT * FROM %s WHERE userID = '%s'" % (my_id,data['userID']))
     t = cur.fetchone()
     if t != None or len(t) >= 0: return {"data": "userBeBlocked"}
-    cur.execute("CREATE TABLE IF NOT EXISTS blockUsers(id int auto_increment primary key, userID varchar(8), timeTo int)")
-    cur.execute("INSERT INTO blockUsers (userID, timeTo) VALUES ('%s', '%s')" % (message["userID"], message["timeTo"]))
+    cur.execute("INSERT INTO %s (userID, timeTo) VALUES ('%s', '%s')" % (my_id,message["userID"], message["timeTo"]))
     conn.commit()
     cur.close()
     conn.close()
@@ -280,14 +280,34 @@ def main(data = Body(),my_id: Optional[str] = Header(None, alias="my_id"), devic
 def main(data = Body(),my_id: Optional[str] = Header(None, alias="my_id"), deviceID: Optional[str] = Header(None, alias="deviceID")):
     message = check_user(my_id, deviceID, data)
     if message == -1: return {"data": "verifityError"}
-    conn = chat_sql_conn(my_id)
+    conn = chat_sql_conn("blockUsers")
     cur = conn.cursor()
-    cur.execute("SELECT * FROM blockUsers WHERE userID = ?", (data['userID']))
+    cur.execute("CREATE TABLE IF NOT EXISTS %s (id int auto_increment primary key, userID varchar(8), timeTo int)" % (my_id))
+    cur.execute("SELECT * FROM %s WHERE userID = '%s'" % (my_id,data['userID']))
     t = cur.fetchone()
     if t == None or len(t) == 0: return {"data":"userDon'tBeBlocked"}
-    cur.execute("DELETE FROM blockUsers WHERE id = ?", (message["userID"]))
+    cur.execute("DELETE FROM %s WHERE id = '%s'" % (my_id,message["userID"]))
     conn.commit()
     cur.close()
     conn.close()
     return {"data":"userUnblocked"}
+@app.get("/search/user")
+def main(my_id: Optional[str] = Header(None, alias="my_id"), deviceID: Optional[str] = Header(None, alias="deviceID"), search: Optional[str] = Header(None, alias="search")):
+    message = check_user(my_id, deviceID)
+    conn = sql_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE login = '%s' OR tag = '%s' OR userID = '%s' OR email = '%s' OR num = '%s'" % (search, search, search, search, search))
+    users = cur.fetchall()
+    data = {"data":"good", "results":{}}
+    for el in users:
+        data["results"][el[0]] = {}
+        data["results"][el[0]]["name"] = el[1]
+        data["results"][el[0]]["tag"] = el[2]
+        cur.execute('SELECT * FROM chatsList WHERE user1ID = "%s" AND user2ID = "%s" OR user1ID = "%s" AND user2ID = "%s"' % (my_id, el[0], el[0], my_id))
+        chat = cur.fetchone()
+        if chat != None and len(chat)>=1:
+            data["results"][el[0]]["chat"] = chat
+    cur.close()
+    conn.close()
+    return data
 
